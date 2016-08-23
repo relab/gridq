@@ -22,3 +22,7 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+cmd/gqserver/gqserver
+cmd/gqclient/gqclient
+
