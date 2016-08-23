@@ -1,5 +1,22 @@
 syntax = "proto3";
 
-package crpc;
+package gqrpc;
 
-message Foo {} 
+service Register {
+	rpc Read(Empty) returns (State) {}
+	rpc Write(State) returns (WriteResponse) {}
+}
+
+message State {
+	uint32 row 	= 1;
+	uint32 colum	= 2; 
+	int64 value	= 3;
+	int64 timestamp = 4;
+} 
+
+message WriteResponse{
+	bool written	= 1;
+}
+
+message Empty {}
+
