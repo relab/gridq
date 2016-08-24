@@ -3,18 +3,22 @@ syntax = "proto3";
 package gqrpc;
 
 service Register {
-	rpc Read(Empty) returns (State) {}
+	rpc Read(Empty) returns (ReadResponse) {}
 	rpc Write(State) returns (WriteResponse) {}
 }
 
 message State {
-	uint32 row 	= 1;
-	uint32 colum	= 2; 
-	int64 value	= 3;
-	int64 timestamp = 4;
+	int64 value	= 1;
+	int64 timestamp = 2;
 } 
 
-message WriteResponse{
+message ReadResponse {
+	uint32 row 	= 1;
+	uint32 col	= 2; 
+	State state	= 3;
+}
+
+message WriteResponse {
 	bool written	= 1;
 }
 

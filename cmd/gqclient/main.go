@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -13,11 +14,24 @@ import (
 	"github.com/relab/gridq/proto/gqrpc"
 )
 
-const localAddrs = ":8080,:8081,:8082,:8083"
+var localAddrs2x2 = []string{
+	":8080", ":8081",
+	":8082", ":8083",
+}
+
+var localAddrs3x3 = []string{
+	":8080", ":8081", ":8082",
+	":8083", ":8084", ":8085",
+	":8086", ":8087", ":8088",
+}
 
 func main() {
-	saddrs := flag.String("addrs", localAddrs, "server addresses separated by ','")
-	srows := flag.Int("rows", 0, "number of rows")
+	var (
+		saddrs     = flag.String("addrs", "", "server addresses separated by ','")
+		srows      = flag.Int("rows", 0, "number of rows")
+		predefined = flag.String("predef", "", "predefined grids ('2x2' or '3x3') for local testing")
+		printGrid  = flag.Bool("gprid", true, "print quorums to screen")
+	)
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
@@ -26,8 +40,24 @@ func main() {
 	}
 	flag.Parse()
 
-	rows := *srows
-	addrs := strings.Split(*saddrs, ",")
+	var rows int
+	var addrs []string
+	if *predefined != "" {
+		switch *predefined {
+		case "2x2":
+			addrs = localAddrs2x2
+			rows = 2
+		case "3x3":
+			rows = 3
+			addrs = localAddrs3x3
+		default:
+			dief("undefined grid: %q", *predefined)
+		}
+	} else {
+		rows = *srows
+		addrs = strings.Split(*saddrs, ",")
+	}
+
 	if len(addrs) == 0 {
 		dief("no server addresses provided")
 	}
@@ -35,7 +65,7 @@ func main() {
 		dief("rows must be > 0")
 	}
 	if len(addrs)%rows != 0 {
-		dief("%d addresse(s) and %d row(s) do not provide a complete grid", len(addrs), rows)
+		dief("%d addresse(s) and %d row(s) does not form a complete grid", len(addrs), rows)
 	}
 	cols := len(addrs) / rows
 
@@ -55,12 +85,42 @@ func main() {
 
 	ids := mgr.NodeIDs()
 
-	conf, err := mgr.NewConfiguration(ids, nil, time.Second)
+	gqspec := &GridQuorumSpec{
+		rows:      rows,
+		cols:      cols,
+		printGrid: *printGrid,
+	}
+
+	conf, err := mgr.NewConfiguration(ids, gqspec, time.Second)
 	if err != nil {
 		dief("error creating config: %v", err)
 	}
 
-	_ = conf
+	for {
+		state := &gqrpc.State{
+			Value:     int64(rand.Intn(1 << 8)),
+			Timestamp: time.Now().Unix(),
+		}
+
+		fmt.Println("writing:", state)
+		wreply, err := conf.Write(state)
+		if err != nil {
+			fmt.Printf("error writing value: %v", err)
+			os.Exit(2)
+		}
+		fmt.Println("write response:", wreply)
+
+		time.Sleep(3 * time.Second)
+
+		rreply, err := conf.Read(&gqrpc.Empty{})
+		if err != nil {
+			fmt.Printf("error reading value: %v", err)
+			os.Exit(2)
+		}
+		fmt.Println("read response:", rreply)
+
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func dief(format string, a ...interface{}) {
@@ -68,4 +128,23 @@ func dief(format string, a ...interface{}) {
 	fmt.Fprint(os.Stderr, "\n")
 	flag.Usage()
 	os.Exit(2)
+}
+
+type GridQuorumSpec struct {
+	rows, cols int
+	printGrid  bool
+}
+
+func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
+	if len(replies) > 1 {
+		return replies[0], true
+	}
+	return nil, false
+}
+
+func (gqs *GridQuorumSpec) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
+	if len(replies) > 1 {
+		return replies[0], true
+	}
+	return nil, false
 }

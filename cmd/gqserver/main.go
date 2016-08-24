@@ -5,11 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -21,11 +23,15 @@ type register struct {
 	sync.RWMutex
 	row, col uint32
 	state    gqrpc.State
+	sleep    bool
 }
 
 func main() {
-	port := flag.String("port", "8080", "port to listen on")
-	id := flag.String("id", "", "id using the form 'row:col'")
+	var (
+		port  = flag.String("port", "8080", "port to listen on")
+		id    = flag.String("id", "", "id using the form 'row:col'")
+		sleep = flag.Bool("sleep", true, "random sleep (0-30ms) before processing any request")
+	)
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
@@ -52,9 +58,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	rand.Seed(time.Now().Unix())
+
 	register := &register{
-		row: row,
-		col: col,
+		row:   row,
+		col:   col,
+		sleep: *sleep,
 	}
 
 	grpcServer := grpc.NewServer()
@@ -78,20 +87,34 @@ func parseRowCol(id string) (uint32, uint32, error) {
 	return uint32(row), uint32(col), nil
 }
 
-func (r *register) Read(ctx context.Context, e *gqrpc.Empty) (*gqrpc.State, error) {
+func (r *register) Read(ctx context.Context, e *gqrpc.Empty) (*gqrpc.ReadResponse, error) {
+	r.randSleep()
 	r.RLock()
 	state := r.state
 	r.RUnlock()
-	return &state, nil
+	return &gqrpc.ReadResponse{
+		Row:   r.row,
+		Col:   r.col,
+		State: &state,
+	}, nil
 }
 
 func (r *register) Write(ctx context.Context, s *gqrpc.State) (*gqrpc.WriteResponse, error) {
-	wr := &gqrpc.WriteResponse{}
+	r.randSleep()
+	wresp := &gqrpc.WriteResponse{}
 	r.Lock()
 	if s.Timestamp > r.state.Timestamp {
 		r.state = *s
-		wr.Written = true
+		wresp.Written = true
 	}
 	r.Unlock()
-	return wr, nil
+	return wresp, nil
+}
+
+func (r *register) randSleep() {
+	if !r.sleep {
+		return
+	}
+	dur := time.Duration(rand.Intn(30)) * time.Millisecond
+	time.Sleep(dur)
 }
