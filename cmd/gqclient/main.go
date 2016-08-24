@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -51,7 +50,7 @@ func main() {
 			rows = 3
 			addrs = localAddrs3x3
 		default:
-			dief("undefined grid: %q", *predefined)
+			dief("unknown predefined grid: %q", *predefined)
 		}
 	} else {
 		rows = *srows
@@ -69,7 +68,7 @@ func main() {
 	}
 	cols := len(addrs) / rows
 
-	log.Println("#addrs:", len(addrs), "rows:", rows, "cols:", cols)
+	fmt.Println("#addrs:", len(addrs), "rows:", rows, "cols:", cols, "\n")
 
 	mgr, err := gqrpc.NewManager(
 		addrs,
@@ -89,6 +88,7 @@ func main() {
 		rows:      rows,
 		cols:      cols,
 		printGrid: *printGrid,
+		vgrid:     newVisualGrid(rows, cols),
 	}
 
 	conf, err := mgr.NewConfiguration(ids, gqspec, time.Second)
@@ -105,19 +105,19 @@ func main() {
 		fmt.Println("writing:", state)
 		wreply, err := conf.Write(state)
 		if err != nil {
-			fmt.Printf("error writing value: %v", err)
+			fmt.Println("error writing value:", err)
 			os.Exit(2)
 		}
-		fmt.Println("write response:", wreply)
+		fmt.Println("write response:", wreply, "\n")
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		rreply, err := conf.Read(&gqrpc.Empty{})
 		if err != nil {
-			fmt.Printf("error reading value: %v", err)
+			fmt.Println("error reading value:", err)
 			os.Exit(2)
 		}
-		fmt.Println("read response:", rreply)
+		fmt.Println("read response:", rreply.Reply.State, "\n")
 
 		time.Sleep(3 * time.Second)
 	}
@@ -128,23 +128,4 @@ func dief(format string, a ...interface{}) {
 	fmt.Fprint(os.Stderr, "\n")
 	flag.Usage()
 	os.Exit(2)
-}
-
-type GridQuorumSpec struct {
-	rows, cols int
-	printGrid  bool
-}
-
-func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
-	if len(replies) > 1 {
-		return replies[0], true
-	}
-	return nil, false
-}
-
-func (gqs *GridQuorumSpec) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
-	if len(replies) > 1 {
-		return replies[0], true
-	}
-	return nil, false
 }
