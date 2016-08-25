@@ -18,3 +18,7 @@ cd cmd/gqclient
 go build
 ./gqclient -predef=3x3
 ```
+
+## Quorum function benchmarks
+
+```make bench```

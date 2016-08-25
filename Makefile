@@ -11,3 +11,7 @@ installprotocgorums:
 .PHONY: proto
 proto: installprotocgorums
 	protoc --$(PROTOC_PLUGIN)=plugins=grpc+gorums:. $(PROTO_GQRPC_PKG_RPATH)/gridq.proto
+
+.PHONY: bench 
+bench:
+	go test github.com/relab/gridq/cmd/gqclient -run=NONE -benchmem -benchtime=5s -bench=.
