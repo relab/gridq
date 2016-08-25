@@ -15,3 +15,17 @@ func (p ByRowCol) Less(i, j int) bool {
 		return p[i].Col < p[j].Col
 	}
 }
+
+type ByColRow []*gqrpc.WriteResponse
+
+func (p ByColRow) Len() int      { return len(p) }
+func (p ByColRow) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByColRow) Less(i, j int) bool {
+	if p[i].Col < p[j].Col {
+		return true
+	} else if p[i].Col > p[j].Col {
+		return false
+	} else {
+		return p[i].Row < p[j].Row
+	}
+}

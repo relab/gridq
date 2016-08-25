@@ -35,8 +35,8 @@ func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadRes
 		}
 		qreplies++
 		if qreplies == gqs.rows {
-			gqs.vgrid.setRowQuorum(row)
 			if gqs.printGrid {
+				gqs.vgrid.setRowQuorum(row)
 				gqs.vgrid.print()
 			}
 			// Return the last reply. The replies forming a quorum
@@ -51,8 +51,37 @@ func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadRes
 
 // WriteQF: One replica from each row.
 func (gqs *GridQuorumSpec) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
-	if len(replies) > 0 {
-		return replies[0], true
+	if len(replies) < gqs.cols {
+		return nil, false
 	}
+
+	sort.Sort(ByColRow(replies))
+
+	qreplies := 1 // Counter for replies from the same row.
+	col := replies[0].Col
+	for i := 1; i < len(replies); i++ {
+		if replies[i].Col != col {
+			qreplies = 1
+			col = replies[i].Col
+			left := len(replies) - i - 1
+			if qreplies+left < gqs.cols {
+				// Not enough replies left.
+				return nil, false
+			}
+			continue
+		}
+		qreplies++
+		if qreplies == gqs.cols {
+			if gqs.printGrid {
+				gqs.vgrid.setColQuorum(col)
+				gqs.vgrid.print()
+			}
+			// Return the last reply. The replies forming a quorum
+			// should be sorted using the timestamps, but we don't
+			// want that logic to impact the benchmarks.
+			return replies[i], true
+		}
+	}
+
 	panic("an invariant was not handled")
 }
