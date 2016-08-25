@@ -19,7 +19,9 @@ message ReadResponse {
 }
 
 message WriteResponse {
-	bool written	= 1;
+	uint32 row 	= 1;
+	uint32 col	= 2; 
+	bool written	= 3;
 }
 
 message Empty {}

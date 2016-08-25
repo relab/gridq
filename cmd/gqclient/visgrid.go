@@ -1,46 +1,80 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
-type visualGrid [][]rune
+type visualGrid struct {
+	sync.Mutex
+	grid       [][]rune
+	crow, ccol int
+}
 
-func newVisualGrid(rows, cols int) visualGrid {
-	vgrid := make([][]rune, rows)
+func newVisualGrid(rows, cols int) *visualGrid {
+	grid := make([][]rune, rows)
 	cells := make([]rune, rows*cols)
-	for i := range vgrid {
-		vgrid[i], cells = cells[:cols], cells[cols:]
+	for i := range grid {
+		grid[i], cells = cells[:cols], cells[cols:]
 	}
+
+	vgrid := &visualGrid{
+		grid: grid,
+		crow: -1,
+		ccol: -1,
+	}
+
 	return vgrid
 }
 
-func (vs visualGrid) setRowQuorum(row uint32) {
+func (vg *visualGrid) setRowQuorum(row uint32) {
+	vg.Lock()
+	defer vg.Unlock()
+	if int(row) == vg.crow {
+		return
+	}
+	vg.crow, vg.ccol = int(row), -1
 	val := '-'
-	for i := range vs {
+	for i := range vg.grid {
 		if i == int(row) {
 			val = 'Q'
 		}
-		for j := range vs[i] {
-			vs[i][j] = val
+		for j := range vg.grid[i] {
+			vg.grid[i][j] = val
 		}
 		val = '-'
 	}
 }
 
-func (vs visualGrid) setColQuorum(col uint32) {
-	for i := range vs {
-		for j := range vs[i] {
+func (vg *visualGrid) setColQuorum(col uint32) {
+	vg.Lock()
+	defer vg.Unlock()
+	if int(col) == vg.ccol {
+		return
+	}
+	vg.crow, vg.ccol = -1, int(col)
+	for i := range vg.grid {
+		for j := range vg.grid[i] {
 			if j == int(col) {
-				vs[i][j] = 'Q'
+				vg.grid[i][j] = 'Q'
 			} else {
-				vs[i][j] = '-'
+				vg.grid[i][j] = '-'
 			}
 		}
 	}
 }
 
-func (vs visualGrid) print() {
-	fmt.Println("quorum:")
-	for i := range vs {
-		fmt.Printf("%c\n", vs[i])
+func (vg visualGrid) print() {
+	vg.Lock()
+	defer vg.Unlock()
+	if vg.crow != -1 {
+		fmt.Println("row quorum:")
+	} else if vg.ccol != -1 {
+		fmt.Println("col quorum:")
+	} else {
+		fmt.Println("no quorum:")
+	}
+	for i := range vg.grid {
+		fmt.Printf("%c\n", vg.grid[i])
 	}
 }

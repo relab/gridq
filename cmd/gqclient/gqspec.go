@@ -2,7 +2,6 @@ package main
 
 import (
 	"sort"
-	"sync"
 
 	"github.com/relab/gridq/proto/gqrpc"
 )
@@ -10,9 +9,7 @@ import (
 type GridQuorumSpec struct {
 	rows, cols int
 	printGrid  bool
-
-	mu    sync.Mutex // Protects vgrid below if requests are issued concurrently.
-	vgrid visualGrid
+	vgrid      *visualGrid
 }
 
 // ReadQF: All replicas from one row.
@@ -23,14 +20,16 @@ func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadRes
 
 	sort.Sort(ByRowCol(replies))
 
-	qreplies := 0 // Count replies from the same row.
+	qreplies := 1 // Counter for replies from the same row.
 	row := replies[0].Row
 	for i := 1; i < len(replies); i++ {
 		if replies[i].Row != row {
 			qreplies = 1
-			row = replies[0].Row
-			if len(replies) == FOO { // TODO: Cont.
-				return nil, false // Not enough replies left.
+			row = replies[i].Row
+			left := len(replies) - i - 1
+			if qreplies+left < gqs.rows {
+				// Not enough replies left.
+				return nil, false
 			}
 			continue
 		}
@@ -40,11 +39,14 @@ func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadRes
 			if gqs.printGrid {
 				gqs.vgrid.print()
 			}
-			return nil, true
+			// Return the last reply. The replies forming a quorum
+			// should be sorted using the timestamps, but we don't
+			// want that logic to impact the benchmarks.
+			return replies[i], true
 		}
 	}
 
-	return nil, false
+	panic("an invariant was not handled")
 }
 
 // WriteQF: One replica from each row.
@@ -52,5 +54,5 @@ func (gqs *GridQuorumSpec) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.Write
 	if len(replies) > 0 {
 		return replies[0], true
 	}
-	return nil, false
+	panic("an invariant was not handled")
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -55,7 +54,8 @@ func main() {
 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("error listening:", err)
+		os.Exit(2)
 	}
 
 	rand.Seed(time.Now().Unix())
@@ -68,7 +68,8 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	gqrpc.RegisterRegisterServer(grpcServer, register)
-	log.Fatal(grpcServer.Serve(l))
+	fmt.Println(grpcServer.Serve(l))
+	os.Exit(2)
 }
 
 func parseRowCol(id string) (uint32, uint32, error) {
