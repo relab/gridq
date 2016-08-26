@@ -156,21 +156,18 @@ func TestGridReadQF(t *testing.T) {
 }
 
 func BenchmarkGridReadQF(b *testing.B) {
-	rows, cols := 3, 3
-	gqspec := &GQSort{
-		rows:      rows,
-		cols:      cols,
-		printGrid: false,
-		vgrid:     newVisualGrid(rows, cols),
-	}
-	for _, test := range gridReadQFTests {
-		if !strings.Contains(test.name, "case") {
-			continue
-		}
-		b.Run(test.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				gqspec.ReadQF(test.replies)
+	for _, qspec := range qspecs {
+		for _, test := range gridReadQFTests {
+			if !strings.Contains(test.name, "case") {
+				continue
 			}
-		})
+			b.Run(qspec.name+"-"+test.name, func(b *testing.B) {
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					qspec.spec.ReadQF(test.replies)
+				}
+			})
+		}
 	}
 }
