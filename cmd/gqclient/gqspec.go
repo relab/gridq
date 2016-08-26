@@ -173,7 +173,7 @@ func (gqs *GQSlice) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, 
 		repliesRM[int(reply.Row)+(gqs.rows*int(reply.Col))] = reply
 		rowCount[reply.Row]++
 		if rowCount[reply.Row] >= gqs.rows {
-			return replies[reply.Row:gqs.rows][0], true
+			return repliesRM[reply.Row:gqs.rows][0], true
 		}
 	}
 
