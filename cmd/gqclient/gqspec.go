@@ -6,14 +6,14 @@ import (
 	"github.com/relab/gridq/proto/gqrpc"
 )
 
-type GridQuorumSpec struct {
+type GQSort struct {
 	rows, cols int
 	printGrid  bool
 	vgrid      *visualGrid
 }
 
 // ReadQF: All replicas from one row.
-func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
+func (gqs *GQSort) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
 	if len(replies) < gqs.rows {
 		return nil, false
 	}
@@ -50,7 +50,7 @@ func (gqs *GridQuorumSpec) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadRes
 }
 
 // WriteQF: One replica from each row.
-func (gqs *GridQuorumSpec) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
+func (gqs *GQSort) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
 	if len(replies) < gqs.cols {
 		return nil, false
 	}
@@ -84,4 +84,74 @@ func (gqs *GridQuorumSpec) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.Write
 	}
 
 	panic("an invariant was not handled")
+}
+
+type GQMap struct {
+	rows, cols int
+	printGrid  bool
+	vgrid      *visualGrid
+}
+
+// ReadQF: All replicas from one row.
+//
+// Note: It is not enough to just know that we have a quorum from a row, we also
+// need to know what replies forms the quorum (both in practice and to be fair
+// to GQSort above).
+func (gqm *GQMap) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
+	if len(replies) < gqm.rows {
+		return nil, false
+	}
+
+	rowReplies := make(map[uint32][]*gqrpc.ReadResponse)
+	var row []*gqrpc.ReadResponse
+	var found bool
+	for _, reply := range replies {
+		row, found = rowReplies[reply.Row]
+		if !found {
+			row = make([]*gqrpc.ReadResponse, 0, gqm.rows)
+		}
+		row = append(row, reply)
+		if len(row) >= gqm.rows {
+			if gqm.printGrid {
+				gqm.vgrid.setRowQuorum(reply.Row)
+				gqm.vgrid.print()
+			}
+			return row[0], true
+		}
+		rowReplies[reply.Row] = row
+	}
+
+	return nil, false
+}
+
+// WriteQF: One replica from each row.
+//
+// Note: It is not enough to just know that we have a quorum from a row, we also
+// need to know what replies forms the quorum (both in practice and to be fair
+// to GQSort above).
+func (gqm *GQMap) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
+	if len(replies) < gqm.cols {
+		return nil, false
+	}
+
+	colReplies := make(map[uint32][]*gqrpc.WriteResponse)
+	var col []*gqrpc.WriteResponse
+	var found bool
+	for _, reply := range replies {
+		col, found = colReplies[reply.Col]
+		if !found {
+			col = make([]*gqrpc.WriteResponse, 0, gqm.cols)
+		}
+		col = append(col, reply)
+		if len(col) >= gqm.cols {
+			if gqm.printGrid {
+				gqm.vgrid.setColQuorum(reply.Col)
+				gqm.vgrid.print()
+			}
+			return col[0], true
+		}
+		colReplies[reply.Col] = col
+	}
+
+	return nil, false
 }

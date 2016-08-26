@@ -116,27 +116,48 @@ var gridReadQFTests = []struct {
 	},
 }
 
+const grows, gcols = 3, 3
+
+var qspecs = []struct {
+	name string
+	spec gqrpc.QuorumSpec
+}{
+	{
+		"GQSort",
+		&GQSort{
+			rows:      grows,
+			cols:      gcols,
+			printGrid: false,
+			vgrid:     newVisualGrid(grows, gcols),
+		},
+	},
+	{
+		"GQMap",
+		&GQMap{
+			rows:      grows,
+			cols:      gcols,
+			printGrid: false,
+			vgrid:     newVisualGrid(grows, gcols),
+		},
+	},
+}
+
 func TestGridReadQF(t *testing.T) {
-	rows, cols := 3, 3
-	gqspec := &GridQuorumSpec{
-		rows:      rows,
-		cols:      cols,
-		printGrid: false,
-		vgrid:     newVisualGrid(rows, cols),
-	}
-	for _, test := range gridReadQFTests {
-		t.Run(test.name, func(t *testing.T) {
-			_, rquorum := gqspec.ReadQF(test.replies)
-			if rquorum != test.rq {
-				t.Errorf("got %t, want %t", rquorum, test.rq)
-			}
-		})
+	for _, qspec := range qspecs {
+		for _, test := range gridReadQFTests {
+			t.Run(qspec.name+"-"+test.name, func(t *testing.T) {
+				_, rquorum := qspec.spec.ReadQF(test.replies)
+				if rquorum != test.rq {
+					t.Errorf("got %t, want %t", rquorum, test.rq)
+				}
+			})
+		}
 	}
 }
 
 func BenchmarkGridReadQF(b *testing.B) {
 	rows, cols := 3, 3
-	gqspec := &GridQuorumSpec{
+	gqspec := &GQSort{
 		rows:      rows,
 		cols:      cols,
 		printGrid: false,
@@ -252,7 +273,7 @@ var gridWriteQFTests = []struct {
 
 func TestGridWriteQF(t *testing.T) {
 	rows, cols := 3, 3
-	gqspec := &GridQuorumSpec{
+	gqspec := &GQSort{
 		rows:      rows,
 		cols:      cols,
 		printGrid: false,
@@ -270,7 +291,7 @@ func TestGridWriteQF(t *testing.T) {
 
 func BenchmarkGridWriteQF(b *testing.B) {
 	rows, cols := 3, 3
-	gqspec := &GridQuorumSpec{
+	gqspec := &GQSort{
 		rows:      rows,
 		cols:      cols,
 		printGrid: false,

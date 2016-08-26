@@ -84,7 +84,7 @@ func main() {
 
 	ids := mgr.NodeIDs()
 
-	gqspec := &GridQuorumSpec{
+	gqspec := &GQSort{
 		rows:      rows,
 		cols:      cols,
 		printGrid: *printGrid,
