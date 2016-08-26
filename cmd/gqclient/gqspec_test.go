@@ -140,6 +140,15 @@ var qspecs = []struct {
 			vgrid:     newVisualGrid(grows, gcols),
 		},
 	},
+	{
+		"GQSlice",
+		&GQSlice{
+			rows:      grows,
+			cols:      gcols,
+			printGrid: false,
+			vgrid:     newVisualGrid(grows, gcols),
+		},
+	},
 }
 
 func TestGridReadQF(t *testing.T) {

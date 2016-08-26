@@ -155,3 +155,32 @@ func (gqm *GQMap) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse,
 
 	return nil, false
 }
+
+type GQSlice struct {
+	rows, cols int
+	printGrid  bool
+	vgrid      *visualGrid
+}
+
+// ReadQF: All replicas from one row.
+func (gqs *GQSlice) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
+	if len(replies) < gqs.rows {
+		return nil, false
+	}
+	rowCount := make([]int, gqs.rows)
+	repliesRM := make([]*gqrpc.ReadResponse, gqs.rows*gqs.cols) // row-major
+	for _, reply := range replies {
+		repliesRM[int(reply.Row)+(gqs.rows*int(reply.Col))] = reply
+		rowCount[reply.Row]++
+		if rowCount[reply.Row] >= gqs.rows {
+			return replies[reply.Row:gqs.rows][0], true
+		}
+	}
+
+	return nil, false
+}
+
+// WriteQF: One replica from each row.
+func (gqs *GQSlice) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
+	panic("not implemented, symmetric with read")
+}
