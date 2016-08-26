@@ -16,6 +16,12 @@ func (p ByRowCol) Less(i, j int) bool {
 	}
 }
 
+type ByTimestamp []*gqrpc.ReadResponse
+
+func (p ByTimestamp) Len() int           { return len(p) }
+func (p ByTimestamp) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p ByTimestamp) Less(i, j int) bool { return p[i].State.Timestamp < p[j].State.Timestamp }
+
 type ByColRow []*gqrpc.WriteResponse
 
 func (p ByColRow) Len() int      { return len(p) }

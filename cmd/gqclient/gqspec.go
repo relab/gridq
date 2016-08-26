@@ -39,10 +39,10 @@ func (gqs *GQSort) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, b
 				gqs.vgrid.setRowQuorum(row)
 				gqs.vgrid.print()
 			}
-			// Return the last reply. The replies forming a quorum
-			// should be sorted using the timestamps, but we don't
-			// want that logic to impact the benchmarks.
-			return replies[i], true
+			start := i - gqs.rows + 1
+			replies = replies[start : start+gqs.rows]
+			sort.Sort(ByTimestamp(replies))
+			return replies[len(replies)-1], true
 		}
 	}
 
@@ -116,7 +116,8 @@ func (gqm *GQMap) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bo
 				gqm.vgrid.setRowQuorum(reply.Row)
 				gqm.vgrid.print()
 			}
-			return row[0], true
+			sort.Sort(ByTimestamp(row))
+			return row[len(row)-1], true
 		}
 		rowReplies[reply.Row] = row
 	}
@@ -125,35 +126,8 @@ func (gqm *GQMap) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bo
 }
 
 // WriteQF: One replica from each row.
-//
-// Note: It is not enough to just know that we have a quorum from a row, we also
-// need to know what replies forms the quorum (both in practice and to be fair
-// to GQSort above).
 func (gqm *GQMap) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
-	if len(replies) < gqm.cols {
-		return nil, false
-	}
-
-	colReplies := make(map[uint32][]*gqrpc.WriteResponse)
-	var col []*gqrpc.WriteResponse
-	var found bool
-	for _, reply := range replies {
-		col, found = colReplies[reply.Col]
-		if !found {
-			col = make([]*gqrpc.WriteResponse, 0, gqm.cols)
-		}
-		col = append(col, reply)
-		if len(col) >= gqm.cols {
-			if gqm.printGrid {
-				gqm.vgrid.setColQuorum(reply.Col)
-				gqm.vgrid.print()
-			}
-			return col[0], true
-		}
-		colReplies[reply.Col] = col
-	}
-
-	return nil, false
+	panic("not implemented, symmetric with read")
 }
 
 type GQSlice struct {
@@ -170,10 +144,12 @@ func (gqs *GQSlice) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, 
 	rowCount := make([]int, gqs.rows)
 	repliesRM := make([]*gqrpc.ReadResponse, gqs.rows*gqs.cols) // row-major
 	for _, reply := range replies {
-		repliesRM[int(reply.Row)+(gqs.rows*int(reply.Col))] = reply
+		repliesRM[(int(reply.Row)*int(gqs.rows))+int(reply.Col)] = reply
 		rowCount[reply.Row]++
 		if rowCount[reply.Row] >= gqs.rows {
-			return repliesRM[reply.Row:gqs.rows][0], true
+			repliesRM = repliesRM[reply.Row:gqs.rows]
+			sort.Sort(ByTimestamp(repliesRM))
+			return repliesRM[len(repliesRM)-1], true
 		}
 	}
 

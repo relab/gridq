@@ -21,6 +21,8 @@ func TestMain(m *testing.M) {
 	os.Exit(res)
 }
 
+const val = 42
+
 var gridReadQFTests = []struct {
 	name    string
 	replies []*gqrpc.ReadResponse
@@ -95,9 +97,9 @@ var gridReadQFTests = []struct {
 	{
 		"best-case quorum",
 		[]*gqrpc.ReadResponse{
-			{Row: 0, Col: 0},
-			{Row: 0, Col: 1},
-			{Row: 0, Col: 2},
+			{Row: 0, Col: 0, State: &gqrpc.State{Timestamp: 2, Value: 9}},
+			{Row: 0, Col: 1, State: &gqrpc.State{Timestamp: 3, Value: val}},
+			{Row: 0, Col: 2, State: &gqrpc.State{Timestamp: 1, Value: 3}},
 		},
 		true,
 	},
@@ -105,12 +107,12 @@ var gridReadQFTests = []struct {
 		"approx. worst-case quorum",
 		[]*gqrpc.ReadResponse{
 			{Row: 1, Col: 0},
-			{Row: 2, Col: 1},
+			{Row: 2, Col: 1, State: &gqrpc.State{Timestamp: 2, Value: 9}},
 			{Row: 0, Col: 1},
 			{Row: 1, Col: 1},
-			{Row: 2, Col: 0},
+			{Row: 2, Col: 0, State: &gqrpc.State{Timestamp: 3, Value: val}},
 			{Row: 0, Col: 0},
-			{Row: 2, Col: 2},
+			{Row: 2, Col: 2, State: &gqrpc.State{Timestamp: 1, Value: 3}},
 		},
 		true,
 	},
@@ -155,9 +157,18 @@ func TestGridReadQF(t *testing.T) {
 	for _, qspec := range qspecs {
 		for _, test := range gridReadQFTests {
 			t.Run(qspec.name+"-"+test.name, func(t *testing.T) {
-				_, rquorum := qspec.spec.ReadQF(test.replies)
+				reply, rquorum := qspec.spec.ReadQF(test.replies)
 				if rquorum != test.rq {
 					t.Errorf("got %t, want %t", rquorum, test.rq)
+				}
+				if rquorum {
+					if reply == nil || reply.State == nil {
+						t.Fatalf("got nil as quorum value, want %d", val)
+					}
+					gotVal := reply.State.Value
+					if gotVal != val {
+						t.Errorf("got %d, want %d as quorum value", gotVal, val)
+					}
 				}
 			})
 		}
