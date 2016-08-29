@@ -26,3 +26,4 @@ _testmain.go
 cmd/gqserver/gqserver
 cmd/gqclient/gqclient
 
+*.swp
