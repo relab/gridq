@@ -125,7 +125,7 @@ var qspecs = []struct {
 	spec gqrpc.QuorumSpec
 }{
 	{
-		"GQSort",
+		"GQSort(3x3)",
 		&GQSort{
 			rows:      grows,
 			cols:      gcols,
@@ -134,7 +134,7 @@ var qspecs = []struct {
 		},
 	},
 	{
-		"GQMap",
+		"GQMap(3x3)",
 		&GQMap{
 			rows:      grows,
 			cols:      gcols,
@@ -143,7 +143,7 @@ var qspecs = []struct {
 		},
 	},
 	{
-		"GQSlice",
+		"GQSlice(3x3)",
 		&GQSlice{
 			rows:      grows,
 			cols:      gcols,
@@ -157,7 +157,8 @@ func TestGridReadQF(t *testing.T) {
 	for _, qspec := range qspecs {
 		for _, test := range gridReadQFTests {
 			t.Run(qspec.name+"-"+test.name, func(t *testing.T) {
-				reply, rquorum := qspec.spec.ReadQF(test.replies)
+				replies := cloneReplies(test.replies)
+				reply, rquorum := qspec.spec.ReadQF(replies)
 				if rquorum != test.rq {
 					t.Errorf("got %t, want %t", rquorum, test.rq)
 				}
@@ -182,10 +183,37 @@ func BenchmarkGridReadQF(b *testing.B) {
 				continue
 			}
 			b.Run(qspec.name+"-"+test.name, func(b *testing.B) {
+				replies := cloneReplies(test.replies)
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					qspec.spec.ReadQF(test.replies)
+					qspec.spec.ReadQF(replies)
+				}
+			})
+		}
+	}
+}
+
+func cloneReplies(replies []*gqrpc.ReadResponse) []*gqrpc.ReadResponse {
+	cloned := make([]*gqrpc.ReadResponse, len(replies))
+	copy(cloned, replies)
+	return cloned
+}
+
+func BenchmarkGridReadQFSuccessive(b *testing.B) {
+	for _, qspec := range qspecs {
+		for _, test := range gridReadQFTests {
+			if !strings.Contains(test.name, "case") {
+				continue
+			}
+			b.Run(qspec.name+"-"+test.name, func(b *testing.B) {
+				replies := cloneReplies(test.replies)
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					for i := 0; i < len(replies); i++ {
+						qspec.spec.ReadQF(replies[0 : i+1])
+					}
 				}
 			})
 		}

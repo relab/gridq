@@ -144,10 +144,11 @@ func (gqs *GQSlice) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, 
 	rowCount := make([]int, gqs.rows)
 	repliesRM := make([]*gqrpc.ReadResponse, gqs.rows*gqs.cols) // row-major
 	for _, reply := range replies {
-		repliesRM[(int(reply.Row)*int(gqs.rows))+int(reply.Col)] = reply
+		repliesRM[(int(reply.Row)*gqs.rows)+int(reply.Col)] = reply
 		rowCount[reply.Row]++
 		if rowCount[reply.Row] >= gqs.rows {
-			repliesRM = repliesRM[reply.Row:gqs.rows]
+			start := int(reply.Row) * gqs.rows
+			repliesRM = repliesRM[start : start+gqs.rows]
 			sort.Sort(ByTimestamp(repliesRM))
 			return repliesRM[len(repliesRM)-1], true
 		}
