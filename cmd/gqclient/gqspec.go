@@ -161,3 +161,48 @@ func (gqs *GQSliceOne) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadRespons
 func (gqs *GQSliceOne) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
 	panic("not implemented, symmetric with read")
 }
+
+type GQSliceTwo struct {
+	rows, cols int
+	printGrid  bool
+	vgrid      *visualGrid
+}
+type rowInfo struct {
+	count int                 // Replies for this row.
+	reply *gqrpc.ReadResponse // Reply with highest timestamp.
+}
+
+// ReadQF: All replicas from one row.
+func (gqs *GQSliceTwo) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
+	if len(replies) < gqs.rows {
+		return nil, false
+	}
+	rows := make([]*rowInfo, gqs.rows)
+	for _, reply := range replies {
+		ri := rows[int(reply.Row)]
+		if rows[int(reply.Row)] == nil {
+			ri = &rowInfo{}
+			rows[int(reply.Row)] = ri
+		}
+		if ri.reply == nil {
+			ri.reply = reply
+		} else if reply.State.Timestamp > ri.reply.State.Timestamp {
+			ri.reply = reply
+		}
+		ri.count++
+		if ri.count >= gqs.rows {
+			if gqs.printGrid {
+				gqs.vgrid.setRowQuorum(reply.Row)
+				gqs.vgrid.print()
+			}
+			return ri.reply, true
+		}
+	}
+
+	return nil, false
+}
+
+// WriteQF: One replica from each row.
+func (gqs *GQSliceTwo) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
+	panic("not implemented, symmetric with read")
+}
