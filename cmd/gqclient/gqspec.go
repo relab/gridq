@@ -130,14 +130,14 @@ func (gqm *GQMap) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse,
 	panic("not implemented, symmetric with read")
 }
 
-type GQSlice struct {
+type GQSliceOne struct {
 	rows, cols int
 	printGrid  bool
 	vgrid      *visualGrid
 }
 
 // ReadQF: All replicas from one row.
-func (gqs *GQSlice) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
+func (gqs *GQSliceOne) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, bool) {
 	if len(replies) < gqs.rows {
 		return nil, false
 	}
@@ -158,6 +158,6 @@ func (gqs *GQSlice) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, 
 }
 
 // WriteQF: One replica from each row.
-func (gqs *GQSlice) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
+func (gqs *GQSliceOne) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse, bool) {
 	panic("not implemented, symmetric with read")
 }

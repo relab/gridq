@@ -143,8 +143,8 @@ var qspecs = []struct {
 		},
 	},
 	{
-		"GQSlice(3x3)",
-		&GQSlice{
+		"GQSliceOne(3x3)",
+		&GQSliceOne{
 			rows:      grows,
 			cols:      gcols,
 			printGrid: false,
