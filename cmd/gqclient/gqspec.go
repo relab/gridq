@@ -18,7 +18,7 @@ func (gqs *GQSort) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, b
 		return nil, false
 	}
 
-	sort.Sort(ByRowCol(replies))
+	sort.Sort(ByRowTimestamp(replies))
 
 	qreplies := 1 // Counter for replies from the same row.
 	row := replies[0].Row
@@ -39,10 +39,7 @@ func (gqs *GQSort) ReadQF(replies []*gqrpc.ReadResponse) (*gqrpc.ReadResponse, b
 				gqs.vgrid.setRowQuorum(row)
 				gqs.vgrid.print()
 			}
-			start := i - gqs.rows + 1
-			replies = replies[start : start+gqs.rows]
-			sort.Sort(ByTimestamp(replies))
-			return replies[len(replies)-1], true
+			return replies[i-gqs.rows+1], true
 		}
 	}
 
@@ -76,9 +73,7 @@ func (gqs *GQSort) WriteQF(replies []*gqrpc.WriteResponse) (*gqrpc.WriteResponse
 				gqs.vgrid.setColQuorum(col)
 				gqs.vgrid.print()
 			}
-			// Return the last reply. The replies forming a quorum
-			// should be sorted using the timestamps, but we don't
-			// want that logic to impact the benchmarks.
+			// WriteResponses don't have timestamps.
 			return replies[i], true
 		}
 	}

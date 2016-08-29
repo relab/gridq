@@ -16,12 +16,6 @@ func (p ByRowCol) Less(i, j int) bool {
 	}
 }
 
-type ByTimestamp []*gqrpc.ReadResponse
-
-func (p ByTimestamp) Len() int           { return len(p) }
-func (p ByTimestamp) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p ByTimestamp) Less(i, j int) bool { return p[i].State.Timestamp < p[j].State.Timestamp }
-
 type ByColRow []*gqrpc.WriteResponse
 
 func (p ByColRow) Len() int      { return len(p) }
@@ -35,3 +29,23 @@ func (p ByColRow) Less(i, j int) bool {
 		return p[i].Row < p[j].Row
 	}
 }
+
+type ByRowTimestamp []*gqrpc.ReadResponse
+
+func (p ByRowTimestamp) Len() int      { return len(p) }
+func (p ByRowTimestamp) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByRowTimestamp) Less(i, j int) bool {
+	if p[i].Row < p[j].Row {
+		return true
+	} else if p[i].Row > p[j].Row {
+		return false
+	} else {
+		return p[i].State.Timestamp > p[j].State.Timestamp
+	}
+}
+
+type ByTimestamp []*gqrpc.ReadResponse
+
+func (p ByTimestamp) Len() int           { return len(p) }
+func (p ByTimestamp) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p ByTimestamp) Less(i, j int) bool { return p[i].State.Timestamp < p[j].State.Timestamp }
