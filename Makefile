@@ -1,8 +1,3 @@
-PROTOC_PLUGIN 			:= gorums_out
-
-PROTO_PKG 			:= proto
-PROTO_GQRPC_PKG_RPATH 		:= $(PROTO_PKG)/gqrpc
-
 .PHONY: installprotocgorums
 installprotocgorums:
 	@echo installing protoc-gen-gorums with gorums linked...
@@ -10,8 +5,8 @@ installprotocgorums:
 
 .PHONY: proto
 proto: installprotocgorums
-	protoc --$(PROTOC_PLUGIN)=plugins=grpc+gorums:. $(PROTO_GQRPC_PKG_RPATH)/gridq.proto
+	protoc -I=$(GOPATH)/src/:. --gorums_out=plugins=grpc+gorums:. gridq.proto
 
 .PHONY: bench 
 bench:
-	go test github.com/relab/gridq/cmd/gqclient -run=NONE -benchmem -benchtime=5s -bench=.
+	go test -run=NONE -benchmem -benchtime=5s -bench=.
