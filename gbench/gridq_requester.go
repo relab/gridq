@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	rpc "github.com/relab/gorums/gridq"
+	rpc "github.com/relab/gridq"
 	"github.com/tylertreat/bench"
 
 	"google.golang.org/grpc"
