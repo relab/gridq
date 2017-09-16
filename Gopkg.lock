@@ -16,7 +16,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/relab/gorums"
-  packages = ["."]
+  packages = [".","gridq"]
   revision = "028e77858163527fb17bfdda499c6297ab5aa878"
 
 [[projects]]
@@ -46,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "01fd1a656c317aff83c9d874b2b8adef423be363bdee056de7383e807dd23113"
+  inputs-digest = "43ecc02f5a20dc65aaef9164d7007cc4b1796194971e3787ec85163262b02d51"
   solver-name = "gps-cdcl"
   solver-version = 1
