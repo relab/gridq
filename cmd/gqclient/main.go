@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/relab/gorums/gridq"
+	"github.com/relab/gridq"
 )
 
 var localAddrs2x2 = []string{

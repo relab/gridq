@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/relab/gorums/gridq"
+	"github.com/relab/gridq"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
